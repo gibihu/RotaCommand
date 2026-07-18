@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+/* Custom Styles & Scrollbar */
+body { 
+    font-family: 'Sarabun', sans-serif; 
+    transition: background-color 0.3s, color 0.3s; 
+}
+
+::-webkit-scrollbar { 
+    width: 6px; 
+    height: 6px; 
+}
+
+::-webkit-scrollbar-track { 
+    background: transparent; 
+}
+
+::-webkit-scrollbar-thumb { 
+    background: #cbd5e1; 
+    border-radius: 3px; 
+}
+
+.dark ::-webkit-scrollbar-thumb { 
+    background: #475569; 
+}
+
+/* Drag and Drop styles (SortableJS adjustments) */
+.draggable { cursor: grab; }
+.draggable:active { cursor: grabbing; }
+.dropzone { min-height: 50px; transition: background-color 0.2s; padding-bottom: 10px; }
+.sortable-ghost { opacity: 0.4; background-color: #cbd5e1; }
+
+/* Modals */
+.modal-overlay { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+
+/* Hide element */
+.hidden { display: none !important; }
