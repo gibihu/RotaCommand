@@ -1,0 +1,12 @@
+window.Views.home = () => {
+    UI.title.innerText = 'ระบบจัดเวร บก.';
+    UI.container.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div onclick="UI.navigate('history')" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow cursor-pointer hover:shadow-md transition border-l-4 border-primary flex items-center gap-4"><div class="bg-indigo-100 dark:bg-indigo-900 p-3 rounded-full text-primary"><i class="fas fa-history fa-fw text-xl"></i></div><div><h3 class="font-bold text-lg">ดูประวัติ / เวรล่าสุด</h3><p class="text-sm text-gray-500">ตรวจสอบตารางเวรที่จัดแล้ว</p></div></div>
+            <div onclick="UI.navigate('personnel')" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow cursor-pointer hover:shadow-md transition border-l-4 border-green-500 flex items-center gap-4"><div class="bg-green-100 dark:bg-green-900 p-3 rounded-full text-green-500"><i class="fas fa-users fa-fw text-xl"></i></div><div><h3 class="font-bold text-lg">รายชื่อกำลังพล</h3><p class="text-sm text-gray-500">เพิ่ม ลบ แก้ไข รายชื่อ</p></div></div>
+            <div onclick="UI.navigate('selectPersonnel')" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow cursor-pointer hover:shadow-md transition border-l-4 border-yellow-500 flex items-center gap-4"><div class="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full text-yellow-500"><i class="fas fa-calendar-alt fa-fw text-xl"></i></div><div><h3 class="font-bold text-lg">จัดเวร</h3><p class="text-sm text-gray-500">เลือกกำลังพลและจัดจุดเข้าเวร</p></div></div>
+            <div onclick="UI.navigate('affiliations')" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow cursor-pointer hover:shadow-md transition border-l-4 border-purple-500 flex items-center gap-4"><div class="bg-purple-100 dark:bg-purple-900 p-3 rounded-full text-purple-500"><i class="fas fa-sitemap fa-fw text-xl"></i></div><div><h3 class="font-bold text-lg">สังกัด / จุดเวร</h3><p class="text-sm text-gray-500">จัดการข้อมูลสังกัดและจุดต่างๆ</p></div></div>
+            <div onclick="UI.navigate('settings')" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow cursor-pointer hover:shadow-md transition border-l-4 border-gray-500 flex items-center gap-4 sm:col-span-2"><div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-full text-gray-500"><i class="fas fa-cog fa-fw text-xl"></i></div><div><h3 class="font-bold text-lg">ตั้งค่า</h3><p class="text-sm text-gray-500">เก็บข้อมูลผ่านไฟล์, ธีม ฯลฯ</p></div></div>
+        </div>
+    `;
+};
