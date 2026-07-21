@@ -5,7 +5,6 @@ window.Views.personnel = () => {
     let filterBatch = '';
     const getBatches = () => [...new Set(DB.data.personnel.filter(p => !p.isDeleted).map(p => p.batch))].sort();
 
-    // วาดโครงสร้างหลักแค่ครั้งเดียว ป้องกัน Input เสีย Focus
     UI.container.innerHTML = `
         <div class="mb-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow space-y-4">
             <div class="flex justify-between items-center">
@@ -50,7 +49,6 @@ window.Views.personnel = () => {
         }
         html += `</tbody></table></div>`;
         document.getElementById('p-table-container').innerHTML = html;
-        
         document.getElementById('btn-toggle-trash').innerHTML = `<i class="fas ${showTrash ? 'fa-list' : 'fa-trash'} mr-1"></i>${showTrash ? 'ดูรายชื่อปกติ' : 'ถังขยะ'}`;
     };
 
@@ -58,7 +56,61 @@ window.Views.personnel = () => {
     document.getElementById('s_batch_p').addEventListener('change', (e) => { filterBatch = e.target.value; renderTableOnly(); });
     document.getElementById('btn-toggle-trash').onclick = () => { showTrash = !showTrash; renderTableOnly(); };
 
-    // --- ส่วนนำเข้าแบบ Dynamic Column Mapping ---
+    // --- ฟังก์ชันเพิ่ม/แก้ไขรายชื่อแบบฟอร์มปกติ ---
+    window.showPersonnelForm = (editId = null) => {
+        const p = editId ? DB.data.personnel.find(x => x.id === editId) : { rank: '', firstName: '', lastName: '', batch: '', px: '' };
+        const mId = 'form-personnel';
+        UI.showModal(`
+            <h3 class="text-xl font-bold mb-4">${editId ? 'แก้ไขกำลังพล' : 'เพิ่มกำลังพล'}</h3>
+            <div class="space-y-3">
+                <div><label class="text-sm font-bold">ยศ</label><input type="text" id="p_rank" value="${p.rank}" class="w-full p-2 border rounded dark:bg-gray-700"></div>
+                <div><label class="text-sm font-bold">ชื่อ</label><input type="text" id="p_fname" value="${p.firstName}" class="w-full p-2 border rounded dark:bg-gray-700"></div>
+                <div><label class="text-sm font-bold">นามสกุล</label><input type="text" id="p_lname" value="${p.lastName}" class="w-full p-2 border rounded dark:bg-gray-700"></div>
+                <div><label class="text-sm font-bold">รุ่น</label><input type="text" id="p_batch" value="${p.batch}" class="w-full p-2 border rounded dark:bg-gray-700"></div>
+                <div><label class="text-sm font-bold">PX</label><input type="number" id="p_px" value="${p.px}" class="w-full p-2 border rounded dark:bg-gray-700"></div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2"><button onclick="UI.closeModal('${mId}')" class="px-4 py-2 bg-gray-200 rounded">ยกเลิก</button><button id="btn-save-p" class="px-4 py-2 bg-primary text-white rounded">บันทึก</button></div>
+        `, mId);
+
+        document.getElementById('btn-save-p').onclick = () => {
+            const rank = document.getElementById('p_rank').value.trim();
+            const fname = document.getElementById('p_fname').value.trim();
+            const lname = document.getElementById('p_lname').value.trim();
+            const batch = document.getElementById('p_batch').value.trim();
+            const px = parseInt(document.getElementById('p_px').value);
+
+            if(!fname || isNaN(px)) return UI.alert('ข้อผิดพลาด', 'กรุณากรอกชื่อและ PX ให้ถูกต้อง');
+
+            if(editId) {
+                const target = DB.data.personnel.find(x => x.id === editId);
+                target.rank = rank; target.firstName = fname; target.lastName = lname; target.batch = batch; target.px = px;
+            } else {
+                DB.data.personnel.push({ id: Utils.generateId(), rank, firstName: fname, lastName: lname, batch, px, shiftCount: 0, isDeleted: false });
+            }
+            DB.save(); UI.closeModal(mId); updateBatchOptions(); renderTableOnly();
+        };
+    };
+    document.getElementById('btn-add-p').onclick = () => showPersonnelForm();
+
+    window.editPersonnel = (id) => showPersonnelForm(id);
+    window.softDeletePersonnel = (id) => {
+        UI.confirm('ย้ายไปถังขยะ', 'ต้องการย้ายกำลังพลนี้ไปถังขยะใช่หรือไม่?', () => {
+            DB.data.personnel.find(x => x.id === id).isDeleted = true;
+            DB.save(); updateBatchOptions(); renderTableOnly();
+        });
+    };
+    window.restorePersonnel = (id) => {
+        DB.data.personnel.find(x => x.id === id).isDeleted = false;
+        DB.save(); updateBatchOptions(); renderTableOnly();
+    };
+    window.hardDeletePersonnel = (id) => {
+        UI.confirm('ลบถาวร', 'ต้องการลบกำลังพลนี้อย่างถาวรใช่หรือไม่?', () => {
+            DB.data.personnel = DB.data.personnel.filter(x => x.id !== id);
+            DB.save(); updateBatchOptions(); renderTableOnly();
+        }, 'ลบถาวร', 'ยกเลิก', true);
+    };
+
+    // --- ส่วนนำเข้าไฟล์แบบ Dynamic Column Mapping ---
     const showImportForm = () => {
         const mId = 'form-import';
         UI.showModal(`
@@ -115,9 +167,8 @@ window.Views.personnel = () => {
             };
             reader.readAsArrayBuffer(fileInput.files[0]);
         };
-    }
+    };
     document.getElementById('btn-import-p').onclick = showImportForm;
-    // ละฟังก์ชัน showPersonnelForm แบบเก่าไว้ (ใช้งานได้เหมือนเดิม)
 
     updateBatchOptions();
     renderTableOnly();
