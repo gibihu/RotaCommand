@@ -218,136 +218,163 @@ const Views = {
    },
 
    // --- SELECT PERSONNEL ---
-   selectPersonnel: () => {
-       UI.title.innerText = 'เลือกกำลังพลจัดเวร';
-       
-       let selectedIds = new Set(DB.data.draftSelection || []);
-       let searchQuery = '';
-       let filterBatch = '';
-       
-       const getBatches = () => [...new Set(DB.data.personnel.filter(p => !p.isDeleted).map(p => p.batch))].sort();
+selectPersonnel: () => {
+    UI.title.innerText = 'เลือกกำลังพลจัดเวร';
+    
+    let selectedIds = new Set(DB.data.draftSelection || []);
+    let searchQuery = '';
+    let filterBatch = '';
+    
+    const getBatches = () => [...new Set(DB.data.personnel.filter(p => !p.isDeleted).map(p => p.batch))].sort();
 
-       const renderSelectionList = () => {
-           let list = DB.data.personnel.filter(p => !p.isDeleted);
-           if (filterBatch) list = list.filter(p => p.batch === filterBatch);
-           if (searchQuery) {
-               const q = searchQuery.toLowerCase();
-               list = list.filter(p => p.firstName.toLowerCase().includes(q) || p.lastName.toLowerCase().includes(q) || p.px.toString().includes(q));
-           }
+    // สร้างโครงสร้างหน้าจอหลักครั้งเดียว
+    UI.container.innerHTML = `
+        <div class="mb-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow space-y-4">
+            <div class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <input type="text" id="s_search" placeholder="ค้นหา ชื่อ, นามสกุล, PX..." class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div class="w-48">
+                    <select id="s_batch" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600">
+                        <option value="">ทั้งหมด (รุ่น)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-between items-center">
+                <span id="s_counter" class="font-bold text-primary">เลือกแล้ว: ${selectedIds.size} คน</span>
+                <div class="space-x-2">
+                    <button id="btn-clear-sel" class="text-gray-500 hover:text-danger px-3 py-1"><i class="fas fa-broom mr-1"></i>ล้าง</button>
+                    <button id="btn-confirm-sel" class="bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-indigo-600 transition">จัดเวร <i class="fas fa-arrow-right ml-1"></i></button>
+                </div>
+            </div>
+        </div>
 
-           const batches = getBatches();
-           let batchOptions = '<option value="">ทั้งหมด (รุ่น)</option>';
-           batches.forEach(b => batchOptions += `<option value="${b}" ${filterBatch === b ? 'selected' : ''}>${b}</option>`);
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="p-3 border-b dark:border-gray-600 w-12 text-center">เลือก</th>
+                            <th class="p-3 border-b dark:border-gray-600">ยศ ชื่อ นามสกุล</th>
+                            <th class="p-3 border-b dark:border-gray-600">รุ่น</th>
+                            <th class="p-3 border-b dark:border-gray-600">PX</th>
+                            <th class="p-3 border-b dark:border-gray-600">เข้าเวร</th>
+                        </tr>
+                    </thead>
+                    <tbody id="s_tbody"></tbody>
+                </table>
+            </div>
+        </div>`;
 
-           let html = `
-           <div class="mb-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow space-y-4">
-               <div class="flex flex-wrap gap-4">
-                   <div class="flex-1 min-w-[200px]">
-                       <input type="text" id="s_search" placeholder="ค้นหา ชื่อ, นามสกุล, PX..." value="${searchQuery}" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600">
-                   </div>
-                   <div class="w-48">
-                       <select id="s_batch" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600">
-                           ${batchOptions}
-                       </select>
-                   </div>
-               </div>
-               <div class="flex justify-between items-center">
-                   <span class="font-bold text-primary">เลือกแล้ว: ${selectedIds.size} คน</span>
-                   <div class="space-x-2">
-                       <button id="btn-clear-sel" class="text-gray-500 hover:text-danger px-3 py-1"><i class="fas fa-broom mr-1"></i>ล้าง</button>
-                       <button id="btn-confirm-sel" class="bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-indigo-600 transition">จัดเวร <i class="fas fa-arrow-right ml-1"></i></button>
-                   </div>
-               </div>
-           </div>
+    const searchInput = document.getElementById('s_search');
+    const batchSelect = document.getElementById('s_batch');
+    const tbody = document.getElementById('s_tbody');
+    const counterSpan = document.getElementById('s_counter');
 
-           <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-               <div class="overflow-x-auto">
-                   <table class="w-full text-left border-collapse">
-                       <thead class="bg-gray-100 dark:bg-gray-700">
-                           <tr>
-                               <th class="p-3 border-b dark:border-gray-600 w-12 text-center">เลือก</th>
-                               <th class="p-3 border-b dark:border-gray-600">ยศ ชื่อ นามสกุล</th>
-                               <th class="p-3 border-b dark:border-gray-600">รุ่น</th>
-                               <th class="p-3 border-b dark:border-gray-600">PX</th>
-                               <th class="p-3 border-b dark:border-gray-600">เข้าเวร</th>
-                           </tr>
-                       </thead>
-                       <tbody>`;
-           
-           if (list.length === 0) {
-               html += `<tr><td colspan="5" class="p-6 text-center text-gray-500">ไม่พบรายชื่อ</td></tr>`;
-           } else {
-               list.forEach(p => {
-                   const isChecked = selectedIds.has(p.id) ? 'checked' : '';
-                   html += `
-                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onclick="toggleSel('${p.id}')">
-                       <td class="p-3 border-b dark:border-gray-600 text-center">
-                           <input type="checkbox" id="chk_${p.id}" ${isChecked} class="w-5 h-5 text-primary rounded focus:ring-primary cursor-pointer" onclick="event.stopPropagation(); toggleSel('${p.id}')">
-                       </td>
-                       <td class="p-3 border-b dark:border-gray-600">${p.rank} ${p.firstName} ${p.lastName}</td>
-                       <td class="p-3 border-b dark:border-gray-600">${p.batch}</td>
-                       <td class="p-3 border-b dark:border-gray-600">${p.px}</td>
-                       <td class="p-3 border-b dark:border-gray-600">${p.shiftCount} ครั้ง</td>
-                   </tr>`;
-               });
-           }
-           html += `</tbody></table></div></div>`;
-           
-           UI.container.innerHTML = html;
+    // ฟังก์ชันสำหรับอัปเดตเฉพาะรายการในตารางและ Dropdown รุ่น
+    const updateTableAndBatch = () => {
+        // อัปเดต Dropdown รุ่น (ถ้ายังไม่มีตัวเลือก)
+        const batches = getBatches();
+        let batchOptions = '<option value="">ทั้งหมด (รุ่น)</option>';
+        batches.forEach(b => batchOptions += `<option value="${b}" ${filterBatch === b ? 'selected' : ''}>${b}</option>`);
+        if (batchSelect.innerHTML !== batchOptions) {
+            batchSelect.innerHTML = batchOptions;
+        }
 
-           document.getElementById('s_search').addEventListener('input', (e) => { searchQuery = e.target.value; renderSelectionList(); });
-           document.getElementById('s_batch').addEventListener('change', (e) => { filterBatch = e.target.value; renderSelectionList(); });
-           
-           document.getElementById('btn-clear-sel').onclick = () => {
-               if(selectedIds.size > 0) {
-                   UI.confirm('ล้างการเลือก', 'ต้องการยกเลิกการเลือกบุคคลทั้งหมดหรือไม่?', () => {
-                       selectedIds.clear();
-                       DB.data.draftSelection = []; DB.save();
-                       renderSelectionList();
-                   });
-               }
-           };
-           document.getElementById('btn-confirm-sel').onclick = processSelection;
-       };
+        // กรองข้อมูล
+        let list = DB.data.personnel.filter(p => !p.isDeleted);
+        if (filterBatch) list = list.filter(p => p.batch === filterBatch);
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            list = list.filter(p => p.firstName.toLowerCase().includes(q) || p.lastName.toLowerCase().includes(q) || p.px.toString().includes(q));
+        }
 
-       window.toggleSel = (id) => {
-           if(selectedIds.has(id)) selectedIds.delete(id);
-           else selectedIds.add(id);
-           DB.data.draftSelection = Array.from(selectedIds);
-           DB.save();
-           const chk = document.getElementById('chk_' + id);
-           if(chk) chk.checked = selectedIds.has(id);
-           const txt = document.querySelector('.text-primary.font-bold');
-           if(txt) txt.innerText = `เลือกแล้ว: ${selectedIds.size} คน`;
-       };
+        // สร้าง HTML แถวข้อมูล
+        let rowsHtml = '';
+        if (list.length === 0) {
+            rowsHtml = `<tr><td colspan="5" class="p-6 text-center text-gray-500">ไม่พบรายชื่อ</td></tr>`;
+        } else {
+            list.forEach(p => {
+                const isChecked = selectedIds.has(p.id) ? 'checked' : '';
+                rowsHtml += `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer" onclick="toggleSel('${p.id}')">
+                    <td class="p-3 border-b dark:border-gray-600 text-center">
+                        <input type="checkbox" id="chk_${p.id}" ${isChecked} class="w-5 h-5 text-primary rounded focus:ring-primary cursor-pointer" onclick="event.stopPropagation(); toggleSel('${p.id}')">
+                    </td>
+                    <td class="p-3 border-b dark:border-gray-600">${p.rank} ${p.firstName} ${p.lastName}</td>
+                    <td class="p-3 border-b dark:border-gray-600">${p.batch}</td>
+                    <td class="p-3 border-b dark:border-gray-600">${p.px}</td>
+                    <td class="p-3 border-b dark:border-gray-600">${p.shiftCount} ครั้ง</td>
+                </tr>`;
+            });
+        }
+        tbody.innerHTML = rowsHtml;
+        counterSpan.innerText = `เลือกแล้ว: ${selectedIds.size} คน`;
+    };
 
-       const processSelection = () => {
-           if (selectedIds.size === 0) return UI.alert('แจ้งเตือน', 'กรุณาเลือกกำลังพลอย่างน้อย 1 นาย');
-           
-           const defaultAff = DB.getDefaultAffiliation();
-           let reqPeople = 0;
-           defaultAff.points.forEach(pt => { if(pt.capacity !== 999) reqPeople += parseInt(pt.capacity); });
-           
-           const proceed = () => {
-               const selectedPx = Array.from(selectedIds).map(id => {
-                   const p = DB.data.personnel.find(x => x.id === id);
-                   return p ? p.px : '';
-               }).join(', ');
-               
-               UI.confirm('ยืนยันรายชื่อจัดเวร', `กำลังพลที่เลือก: ${selectedIds.size} นาย<br><br><div class="text-sm text-gray-500 max-h-32 overflow-y-auto">PX: ${selectedPx}</div>`, () => {
-                   UI.navigate('scheduler', { startFresh: true });
-               });
-           };
+    // ผูก Event Listeners กับช่องค้นหาและตัวกรองเพียงครั้งเดียว
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        updateTableAndBatch();
+    });
 
-           if (selectedIds.size < reqPeople) {
-               UI.confirm('จำนวนคนไม่ครบ', `สังกัด ${defaultAff.shortName} ต้องการคนอย่างน้อย ${reqPeople} นาย (ไม่รวม ฉก.) แต่เลือกมาเพียง ${selectedIds.size} นาย ต้องการดำเนินการต่อหรือไม่?`, proceed, 'ดำเนินการต่อ');
-           } else {
-               proceed();
-           }
-       };
+    batchSelect.addEventListener('change', (e) => {
+        filterBatch = e.target.value;
+        updateTableAndBatch();
+    });
 
-       renderSelectionList();
-   },
+    document.getElementById('btn-clear-sel').onclick = () => {
+        if(selectedIds.size > 0) {
+            UI.confirm('ล้างการเลือก', 'ต้องการยกเลิกการเลือกบุคคลทั้งหมดหรือไม่?', () => {
+                selectedIds.clear();
+                DB.data.draftSelection = []; 
+                DB.save();
+                updateTableAndBatch();
+            });
+        }
+    };
+
+    const processSelection = () => {
+        if (selectedIds.size === 0) return UI.alert('แจ้งเตือน', 'กรุณาเลือกกำลังพลอย่างน้อย 1 นาย');
+        
+        const defaultAff = DB.getDefaultAffiliation();
+        let reqPeople = 0;
+        defaultAff.points.forEach(pt => { if(pt.capacity !== 999) reqPeople += parseInt(pt.capacity); });
+        
+        const proceed = () => {
+            const selectedPx = Array.from(selectedIds).map(id => {
+                const p = DB.data.personnel.find(x => x.id === id);
+                return p ? p.px : '';
+            }).join(', ');
+            
+            UI.confirm('ยืนยันรายชื่อจัดเวร', `กำลังพลที่เลือก: ${selectedIds.size} นาย<br><br><div class="text-sm text-gray-500 max-h-32 overflow-y-auto">PX: ${selectedPx}</div>`, () => {
+                UI.navigate('scheduler', { startFresh: true });
+            });
+        };
+
+        if (selectedIds.size < reqPeople) {
+            UI.confirm('จำนวนคนไม่ครบ', `สังกัด ${defaultAff.shortName} ต้องการคนอย่างน้อย ${reqPeople} นาย (ไม่รวม ฉก.) แต่เลือกมาเพียง ${selectedIds.size} นาย ต้องการดำเนินการต่อหรือไม่?`, proceed, 'ดำเนินการต่อ');
+        } else {
+            proceed();
+        }
+    };
+
+    document.getElementById('btn-confirm-sel').onclick = processSelection;
+
+    window.toggleSel = (id) => {
+        if(selectedIds.has(id)) selectedIds.delete(id);
+        else selectedIds.add(id);
+        DB.data.draftSelection = Array.from(selectedIds);
+        DB.save();
+        const chk = document.getElementById('chk_' + id);
+        if(chk) chk.checked = selectedIds.has(id);
+        counterSpan.innerText = `เลือกแล้ว: ${selectedIds.size} คน`;
+    };
+
+    // โหลดแสดงผลครั้งแรก
+    updateTableAndBatch();
+},
+                   
 
    // --- SCHEDULER (DRAG & DROP) ---
    scheduler: (params = {}) => {
